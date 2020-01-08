@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+
+const fetch = require('node-fetch');
+const fs = require('fs');
+const config = require('../lib/config');
+const { requestPassword } = require('../lib/index');
+
+function main() {
+  if (process.argv.length < 3) {
+    console.log('Usage: ./bin/insert-stories stories.json');
+    return;
+  }
+
+  const stories = JSON.parse(fs.readFileSync(process.argv[2]));
+  requestPassword(config.tokenPrompt, insertStories(stories));
+}
+
+function insertStories(stories) {
+  return token => {
+    console.log(stories, token);
+  };
+}
+
+function getUrl(path, token) {
+  return `${config.baseUrl}/api/v2${path}?token=${token}`;
+}
+
+main();

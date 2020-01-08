@@ -1,0 +1,4 @@
+{
+  "tokenPrompt": "Enter Clubhouse token: ",
+  "baseUrl": "https://api.clubhouse.io"
+}
