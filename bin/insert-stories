@@ -12,13 +12,41 @@ function main() {
   }
 
   const stories = JSON.parse(fs.readFileSync(process.argv[2]));
-  requestPassword(config.tokenPrompt, insertStories(stories));
+  requestPassword(config.tokenPrompt, token => insertStories(stories, token));
 }
 
-function insertStories(stories) {
-  return token => {
-    console.log(stories, token);
-  };
+async function insertStories(stories, token) {
+  // get the friendly names for each user
+  const users = await getUsers(token);
+  const usersByName = users.reduce((mapping, user) => {
+    const name = user.profile.mention_name.toLowerCase();
+    mapping[name] = user;
+    return mapping;
+  }, {});
+
+  // stories.map(story => insertStory(story, token));
+}
+
+async function getUsers(token) {
+  const url = getUrl('/members', token);
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  return response.json();
+}
+
+async function insertStory(story, token) {
+  const url = getUrl('/stories', token);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(story)
+  });
+  return response.json();
 }
 
 function getUrl(path, token) {
