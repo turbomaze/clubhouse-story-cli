@@ -17,36 +17,51 @@ function main() {
 
 async function insertStories(stories, token) {
   // get the friendly names for each user
-  const users = await getUsers(token);
-  const usersByName = users.reduce((mapping, user) => {
-    const name = user.profile.mention_name.toLowerCase();
-    mapping[name] = user;
-    return mapping;
-  }, {});
+  const users = await fetchHelper('/members', token);
+  const usersByName = listToMap(users, user => user.profile.mention_name.toLowerCase());
+  const nameToId = user => usersByName[user].id;
 
-  // stories.map(story => insertStory(story, token));
-}
+  // get the friendly names for each project
+  const projects = await fetchHelper('/projects', token);
+  const projectsByName = listToMap(projects, project => project.name);
 
-async function getUsers(token) {
-  const url = getUrl('/members', token);
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+  // replace the friendly names in ${stories} with ids
+  const cleanedStories = stories.map(story => {
+    return {
+      ...story,
+      project_id: projectsByName[story.project_id].id,
+      requested_by_id: nameToId(story.requested_by_id),
+      owner_ids: story.owner_ids.map(nameToId),
+    };
   });
-  return response.json();
+
+  cleanedStories.map(story => insertStory(story, token));
 }
 
 async function insertStory(story, token) {
-  const url = getUrl('/stories', token);
-  const response = await fetch(url, {
+  console.log(`\nINSERTING STORY:\n  ${JSON.stringify(story)}`);
+
+  return fetchHelper('/stories', token, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(story)
   });
+}
+
+async function fetchHelper(endpoint, token, options = {}) {
+  const url = getUrl(endpoint, token);
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', },
+    ...options
+  });
   return response.json();
+}
+
+function listToMap(list, keyFunction) {
+  return list.reduce((mapping, item) => {
+    const key = keyFunction(item);
+    mapping[key] = item;
+    return mapping;
+  }, {});
 }
 
 function getUrl(path, token) {
