@@ -12,7 +12,7 @@ const {
 
 function main() {
   if (process.argv.length < 3) {
-    console.log('Usage: ./bin/insert-stories stories.json');
+    console.log('Usage: insert-stories stories.json');
     return;
   }
 
@@ -41,7 +41,7 @@ async function insertStories(stories, token) {
     };
   });
 
-  cleanedStories.map(story => insertStory(story, token));
+  await Promise.all(cleanedStories.map(story => insertStory(story, token)));
 }
 
 main();

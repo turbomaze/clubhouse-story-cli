@@ -12,6 +12,7 @@
     "node-fetch": "^2.6.0"
   },
   "bin": {
-    "insert-stories": "./bin/insert-stories"
+    "insert-stories": "./bin/insert-stories",
+    "insert-story": "./bin/insert-story"
   }
 }

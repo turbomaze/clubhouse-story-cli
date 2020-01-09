@@ -1,0 +1,57 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const config = require('../lib/config');
+const {
+  fetchHelper,
+  getUrl,
+  insertStory,
+  listToMap,
+  requestPassword,
+} = require('../lib/index');
+
+function main() {
+  if (process.argv.length < 8) {
+    console.log('Usage: insert-story \\');
+    console.log('  DEFAULT_OWNER DEFAULT_STATE DEFAULT_BOARD REQUESTER \\');
+    console.log('  NAME SIZE [OWNER] [STATE] [BOARD]');
+    console.log("\nNOTE: It's recommended that you add an alias to your rc files that includes these default values.");
+    return;
+  }
+
+  const owner = process.argv[8] || process.argv[2];
+  // TODO: const state = process.argv[9] || process.argv[3];
+  const board = process.argv[10] || process.argv[4];
+  // TODO: const size = process.argv[7];
+  const story = {
+    "project_id": board,
+    "name": process.argv[6],
+    "description": "",
+    "requested_by_id": process.argv[5],
+    "owner_ids": [owner]
+  };
+  requestPassword(config.tokenPrompt, token => insertPartiallyDefinedStory(story, token));
+}
+
+async function insertPartiallyDefinedStory(partialStory, token) {
+  // get the friendly names for each user
+  const users = await fetchHelper('/members', token); const usersByName = listToMap(users, user => user.profile.name.split(' ')[0].toLowerCase());
+  const nameToId = user => usersByName[user.toLowerCase()].id;
+
+  // get the friendly names for each project
+  const projects = await fetchHelper('/projects', token);
+  const projectsByName = listToMap(projects, project => project.name.toLowerCase());
+  const projectToId = project => projectsByName[project.toLowerCase()].id;
+
+  // replace the friendly names in ${stories} with ids
+  const story = {
+    ...partialStory,
+    project_id: projectToId(partialStory.project_id),
+    requested_by_id: nameToId(partialStory.requested_by_id),
+    owner_ids: partialStory.owner_ids.map(nameToId),
+  };
+  console.log(story);
+  await insertStory(story, token);
+}
+
+main();
