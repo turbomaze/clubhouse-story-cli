@@ -20,15 +20,16 @@ function main() {
   }
 
   const owner = process.argv[8] || process.argv[2];
-  // TODO: const state = process.argv[9] || process.argv[3];
+  const state = process.argv[9] || process.argv[3];
   const board = process.argv[10] || process.argv[4];
-  // TODO: const size = process.argv[7];
   const story = {
-    "project_id": board,
-    "name": process.argv[6],
-    "description": "",
-    "requested_by_id": process.argv[5],
-    "owner_ids": [owner]
+    project_id: board,
+    name: process.argv[6],
+    description: '',
+    requested_by_id: process.argv[5],
+    owner_ids: [owner],
+    workflow_state_id: state,
+    estimate: parseInt(process.argv[7]),
   };
   requestPassword(config.tokenPrompt, token => insertPartiallyDefinedStory(story, token));
 }
@@ -43,14 +44,21 @@ async function insertPartiallyDefinedStory(partialStory, token) {
   const projectsByName = listToMap(projects, project => project.name.toLowerCase());
   const projectToId = project => projectsByName[project.toLowerCase()].id;
 
+  // get the friendly names for each workflow state
+  const workflows = await fetchHelper('/workflows', token);
+  const workflowsByName = listToMap(workflows, workflow => workflow.name.toLowerCase());
+  const defaultWorkflow = workflowsByName.default;
+  const statesByName = listToMap(workflowsByName.default.states, state => state.name.toLowerCase());
+  const stateToId = state => statesByName[state.toLowerCase()].id;
+
   // replace the friendly names in ${stories} with ids
   const story = {
     ...partialStory,
     project_id: projectToId(partialStory.project_id),
     requested_by_id: nameToId(partialStory.requested_by_id),
     owner_ids: partialStory.owner_ids.map(nameToId),
+    workflow_state_id: stateToId(partialStory.workflow_state_id)
   };
-  console.log(story);
   await insertStory(story, token);
 }
 
