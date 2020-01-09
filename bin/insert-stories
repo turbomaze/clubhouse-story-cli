@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 
-const fetch = require('node-fetch');
 const fs = require('fs');
 const config = require('../lib/config');
-const { requestPassword } = require('../lib/index');
+const {
+  fetchHelper,
+  getUrl,
+  insertStory,
+  listToMap,
+  requestPassword,
+} = require('../lib/index');
 
 function main() {
   if (process.argv.length < 3) {
@@ -18,54 +23,25 @@ function main() {
 async function insertStories(stories, token) {
   // get the friendly names for each user
   const users = await fetchHelper('/members', token);
-  const usersByName = listToMap(users, user => user.profile.mention_name.toLowerCase());
-  const nameToId = user => usersByName[user].id;
+  const usersByName = listToMap(users, user => user.profile.name.split(' ')[0].toLowerCase());
+  const nameToId = user => usersByName[user.toLowerCase()].id;
 
   // get the friendly names for each project
   const projects = await fetchHelper('/projects', token);
-  const projectsByName = listToMap(projects, project => project.name);
+  const projectsByName = listToMap(projects, project => project.name.toLowerCase());
+  const projectToId = project => projectsByName[project.toLowerCase()].id;
 
   // replace the friendly names in ${stories} with ids
   const cleanedStories = stories.map(story => {
     return {
       ...story,
-      project_id: projectsByName[story.project_id].id,
+      project_id: projectToId(story.project_id),
       requested_by_id: nameToId(story.requested_by_id),
       owner_ids: story.owner_ids.map(nameToId),
     };
   });
 
   cleanedStories.map(story => insertStory(story, token));
-}
-
-async function insertStory(story, token) {
-  console.log(`\nINSERTING STORY:\n  ${JSON.stringify(story)}`);
-
-  return fetchHelper('/stories', token, {
-    method: 'POST',
-    body: JSON.stringify(story)
-  });
-}
-
-async function fetchHelper(endpoint, token, options = {}) {
-  const url = getUrl(endpoint, token);
-  const response = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', },
-    ...options
-  });
-  return response.json();
-}
-
-function listToMap(list, keyFunction) {
-  return list.reduce((mapping, item) => {
-    const key = keyFunction(item);
-    mapping[key] = item;
-    return mapping;
-  }, {});
-}
-
-function getUrl(path, token) {
-  return `${config.baseUrl}/api/v2${path}?token=${token}`;
 }
 
 main();
