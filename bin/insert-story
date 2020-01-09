@@ -35,17 +35,21 @@ function main() {
 }
 
 async function insertPartiallyDefinedStory(partialStory, token) {
+  const [users, projects, workflows] = await Promise.all([
+    fetchHelper('/members', token),
+    fetchHelper('/projects', token),
+    fetchHelper('/workflows', token),
+  ]);
+
   // get the friendly names for each user
-  const users = await fetchHelper('/members', token); const usersByName = listToMap(users, user => user.profile.name.split(' ')[0].toLowerCase());
+  const usersByName = listToMap(users, user => user.profile.name.split(' ')[0].toLowerCase());
   const nameToId = user => usersByName[user.toLowerCase()].id;
 
   // get the friendly names for each project
-  const projects = await fetchHelper('/projects', token);
   const projectsByName = listToMap(projects, project => project.name.toLowerCase());
   const projectToId = project => projectsByName[project.toLowerCase()].id;
 
   // get the friendly names for each workflow state
-  const workflows = await fetchHelper('/workflows', token);
   const workflowsByName = listToMap(workflows, workflow => workflow.name.toLowerCase());
   const defaultWorkflow = workflowsByName.default;
   const statesByName = listToMap(workflowsByName.default.states, state => state.name.toLowerCase());
@@ -59,6 +63,7 @@ async function insertPartiallyDefinedStory(partialStory, token) {
     owner_ids: partialStory.owner_ids.map(nameToId),
     workflow_state_id: stateToId(partialStory.workflow_state_id)
   };
+
   await insertStory(story, token);
 }
 

@@ -1,10 +1,12 @@
 {
   "name": "clubhouse-story-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "./lib/index.js",
   "author": "Anthony Liu",
   "license": "MIT",
+  "repository": "git://github.com/turbomaze/clubhouse-story-cli.git",
+  "homepage": "https://github.com/tubomaze/clubhouse-story-cli",
   "dependencies": {
     "node-fetch": "^2.6.0"
   },
